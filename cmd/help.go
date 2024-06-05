@@ -132,7 +132,6 @@ func setupRootCommand(rootCmd *cobra.Command) {
 
 	Root.Run = runRoot
 	Root.Flags().BoolVarP(&version, "version", "V", false, "Print the version number")
-
 	cobra.AddTemplateFunc("showGlobalFlags", func(cmd *cobra.Command) bool {
 		return cmd.CalledAs() == "flags" || cmd.Annotations["groups"] != ""
 	})

@@ -21,6 +21,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"reflect"
+	"unsafe"
 
 	"github.com/rclone/rclone/fs"
 	"github.com/rclone/rclone/fs/accounting"
@@ -46,6 +48,9 @@ import (
 
 // Globals
 var (
+	// Setup
+	setupDone	  = false
+
 	// Flags
 	cpuProfile    = flags.StringP("cpuprofile", "", "", "Write cpu profile to file", "Debugging")
 	memProfile    = flags.StringP("memprofile", "", "", "Write memory profile to file", "Debugging")
@@ -61,7 +66,10 @@ var (
 
 // ShowVersion prints the version to stdout
 func ShowVersion() {
-	osVersion, osKernel := buildinfo.GetOSVersion()
+	//osVersion, osKernel := buildinfo.GetOSVersion()
+	osVersion := ""
+	osKernel := ""
+
 	if osVersion == "" {
 		osVersion = "unknown"
 	}
@@ -563,12 +571,48 @@ func AddBackendFlags() {
 
 // Main runs rclone interpreting flags and commands out of os.Args
 func Main() {
-	setupRootCommand(Root)
-	AddBackendFlags()
+	defer fmt.Println("Running main")
+
+	if(!setupDone) {
+		fmt.Println("setting up")
+		setupRootCommand(Root)
+		AddBackendFlags()
+		setupDone = true
+	}
+
+	fmt.Println("resetting flags")
+	resetSubCommandFlagValues(Root)
+
+	fmt.Println("executing")
 	if err := Root.Execute(); err != nil {
 		if strings.HasPrefix(err.Error(), "unknown command") && selfupdateEnabled {
 			Root.PrintErrf("You could use '%s selfupdate' to get latest features.\n\n", Root.CommandPath())
 		}
 		log.Fatalf("Fatal error: %v", err)
+	}
+}
+
+// https://github.com/spf13/cobra/issues/1488
+// https://github.com/authzed/zed/pull/188/files/c84130f3a729c663feada44072d672bd4c9e2e70
+// https://github.com/ollionorg/terrarium/pull/76
+func resetSubCommandFlagValues(root *cobra.Command) {
+	for _, c := range root.Commands() {
+		c.Flags().VisitAll(func(f *pflag.Flag) {
+			// https://github.com/spf13/cobra/issues/770
+			if f.Value.Type() == "stringSlice" {
+				// XXX: unfortunately, flag.Value.Set() appends to original
+				// slice, not resets it, so we retrieve pointer to the slice here
+				// and set it to new empty slice manually
+				value := reflect.ValueOf(f.Value).Elem().FieldByName("value")
+				ptr := (*[]string)(unsafe.Pointer(value.Pointer()))
+				*ptr = make([]string, 0)
+			}
+
+			if f.Changed {
+				f.Value.Set(f.DefValue)
+				f.Changed = false
+			}
+		})
+		resetSubCommandFlagValues(c)
 	}
 }

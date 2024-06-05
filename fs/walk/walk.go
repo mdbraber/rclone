@@ -146,7 +146,7 @@ func (l ListType) Filter(in *fs.DirEntries) {
 //
 // NB (f, path) to be replaced by fs.Dir at some point
 func ListR(ctx context.Context, f fs.Fs, path string, includeAll bool, maxLevel int, listType ListType, fn fs.ListRCallback) error {
-	fi := filter.GetConfig(ctx)
+    fi := filter.GetConfig(ctx)
 	// FIXME disable this with --no-fast-list ??? `--disable ListR` will do it...
 	doListR := f.Features().ListR
 

@@ -4,6 +4,7 @@ package ls
 import (
 	"context"
 	"os"
+	"fmt"
 
 	"github.com/rclone/rclone/cmd"
 	"github.com/rclone/rclone/cmd/ls/lshelp"
@@ -35,6 +36,7 @@ Eg
 		"groups": "Filter,Listing",
 	},
 	Run: func(command *cobra.Command, args []string) {
+		fmt.Println("Running ls")
 		cmd.CheckArgs(1, 1, command, args)
 		fsrc := cmd.NewFsSrc(args)
 		cmd.Run(false, false, command, func() error {
