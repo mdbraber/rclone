@@ -841,6 +841,7 @@ func CountStringField(count int64, humanReadable bool, rawWidth int) string {
 func List(ctx context.Context, f fs.Fs, w io.Writer) error {
 	ci := fs.GetConfig(ctx)
 	return ListFn(ctx, f, func(o fs.Object) {
+		fmt.Println("ListFn")
 		SyncFprintf(w, "%s %s\n", SizeStringField(o.Size(), ci.HumanReadable, 9), o.Remote())
 	})
 }

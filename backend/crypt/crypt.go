@@ -177,33 +177,41 @@ when the path length is critical.`,
 
 // newCipherForConfig constructs a Cipher for the given config name
 func newCipherForConfig(opt *Options) (*Cipher, error) {
+	fmt.Println("newCipherConfig A")
 	mode, err := NewNameEncryptionMode(opt.FilenameEncryption)
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("newCipherConfig B")
 	if opt.Password == "" {
 		return nil, errors.New("password not set in config file")
 	}
+	fmt.Println("newCipherConfig C")
 	password, err := obscure.Reveal(opt.Password)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decrypt password: %w", err)
 	}
 	var salt string
+	fmt.Println("newCipherConfig D")
 	if opt.Password2 != "" {
 		salt, err = obscure.Reveal(opt.Password2)
 		if err != nil {
 			return nil, fmt.Errorf("failed to decrypt password2: %w", err)
 		}
 	}
+	fmt.Println("newCipherConfig E")
 	enc, err := NewNameEncoding(opt.FilenameEncoding)
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("newCipherConfig F")
 	cipher, err := newCipher(mode, password, salt, opt.DirectoryNameEncryption, enc)
 	if err != nil {
 		return nil, fmt.Errorf("failed to make cipher: %w", err)
 	}
+	fmt.Println("newCipherConfig G")
 	cipher.setEncryptedSuffix(opt.Suffix)
+	fmt.Println("newCipherConfig H")
 	cipher.setPassBadBlocks(opt.PassBadBlocks)
 	return cipher, nil
 }
@@ -221,25 +229,32 @@ func NewCipher(m configmap.Mapper) (*Cipher, error) {
 
 // NewFs constructs an Fs from the path, container:path
 func NewFs(ctx context.Context, name, rpath string, m configmap.Mapper) (fs.Fs, error) {
+	fmt.Println("crypt NewFs A")
 	// Parse config into Options struct
+	fmt.Println("crypt NewFs")
 	opt := new(Options)
+	fmt.Println("crypt NewFs B")
 	err := configstruct.Set(m, opt)
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("crypt NewFs C")
 	cipher, err := newCipherForConfig(opt)
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("crypt NewFs D")
 	remote := opt.Remote
 	if strings.HasPrefix(remote, name+":") {
 		return nil, errors.New("can't point crypt remote at itself - check the value of the remote setting")
 	}
 	// Make sure to remove trailing . referring to the current dir
+	fmt.Println("crypt NewFs E")
 	if path.Base(rpath) == "." {
 		rpath = strings.TrimSuffix(rpath, ".")
 	}
 	// Look for a file first
+	fmt.Println("crypt NewFs F")
 	var wrappedFs fs.Fs
 	if rpath == "" {
 		wrappedFs, err = cache.Get(ctx, remote)
@@ -252,6 +267,7 @@ func NewFs(ctx context.Context, name, rpath string, m configmap.Mapper) (fs.Fs, 
 			wrappedFs, err = cache.Get(ctx, remotePath)
 		}
 	}
+	fmt.Println("crypt NewFs G")
 	if err != fs.ErrorIsFile && err != nil {
 		return nil, fmt.Errorf("failed to make remote %q to wrap: %w", remote, err)
 	}
@@ -262,6 +278,7 @@ func NewFs(ctx context.Context, name, rpath string, m configmap.Mapper) (fs.Fs, 
 		opt:    *opt,
 		cipher: cipher,
 	}
+	fmt.Println("crypt NewFs H")
 	cache.PinUntilFinalized(f.Fs, f)
 	// Correct root if definitely pointing to a file
 	if err == fs.ErrorIsFile {
@@ -272,6 +289,7 @@ func NewFs(ctx context.Context, name, rpath string, m configmap.Mapper) (fs.Fs, 
 	}
 	// the features here are ones we could support, and they are
 	// ANDed with the ones from wrappedFs
+	fmt.Println("crypt NewFs I")
 	f.features = (&fs.Features{
 		CaseInsensitive:          !cipher.dirNameEncrypt || cipher.NameEncryptionMode() == NameEncryptionOff,
 		DuplicateFiles:           true,
@@ -293,6 +311,7 @@ func NewFs(ctx context.Context, name, rpath string, m configmap.Mapper) (fs.Fs, 
 		PartialUploads:           true,
 	}).Fill(ctx, f).Mask(ctx, wrappedFs).WrapsFs(f, wrappedFs)
 
+	fmt.Println("crypt NewFs J")
 	return f, err
 }
 

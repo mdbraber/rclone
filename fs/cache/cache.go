@@ -5,6 +5,7 @@ import (
 	"context"
 	"runtime"
 	"sync"
+	"fmt"
 
 	"github.com/rclone/rclone/fs"
 	"github.com/rclone/rclone/fs/filter"
@@ -60,20 +61,29 @@ func addMapping(fsString, canonicalName string) {
 // GetFn gets an fs.Fs named fsString either from the cache or creates
 // it afresh with the create function
 func GetFn(ctx context.Context, fsString string, create func(ctx context.Context, fsString string) (fs.Fs, error)) (f fs.Fs, err error) {
+	fmt.Println("GetFn A")
 	createOnFirstUse()
+	fmt.Println("GetFn B")
 	canonicalFsString := Canonicalize(fsString)
+	fmt.Println("GetFn C")
 	created := false
+	fmt.Println("GetFn D")
 	value, err := c.Get(canonicalFsString, func(canonicalFsString string) (f interface{}, ok bool, err error) {
+		fmt.Println("GetFn D1")
 		f, err = create(ctx, fsString) // always create the backend with the original non-canonicalised string
+		fmt.Println("GetFn D2")
 		ok = err == nil || err == fs.ErrorIsFile
+		fmt.Println("GetFn D3")
 		created = ok
 		return f, ok, err
 	})
+	fmt.Println("GetFn E")
 	if err != nil && err != fs.ErrorIsFile {
 		return nil, err
 	}
 	f = value.(fs.Fs)
 	// Check we stored the Fs at the canonical name
+	fmt.Println("GetFn F")
 	if created {
 		canonicalName := fs.ConfigString(f)
 		if canonicalName != canonicalFsString {
@@ -93,6 +103,7 @@ func GetFn(ctx context.Context, fsString string, create func(ctx context.Context
 			}
 		}
 	}
+	fmt.Println("GetFn G")
 	return f, err
 }
 
@@ -134,14 +145,20 @@ func Get(ctx context.Context, fsString string) (f fs.Fs, err error) {
 	// than this request, we want to disconnect it from the
 	// current context and in particular any WithCancel contexts,
 	// but we want to preserve the config embedded in the context.
+	fmt.Println("cache A")
 	newCtx := context.Background()
+	fmt.Println("cache B")
 	newCtx = fs.CopyConfig(newCtx, ctx)
+	fmt.Println("cache C")
 	newCtx = filter.CopyConfig(newCtx, ctx)
+	fmt.Println("cache D")
 	f, err = GetFn(newCtx, fsString, fs.NewFs)
+	fmt.Println("cache E")
 	if f == nil || (err != nil && err != fs.ErrorIsFile) {
 		return f, err
 	}
 	// If this is part of an rc job then pin the backend until it finishes
+	fmt.Println("cache F")
 	if JobOnFinish != nil && JobGetJobID != nil {
 		if jobID, ok := JobGetJobID(ctx); ok {
 			// fs.Debugf(f, "Pin for job %d", jobID)
@@ -152,6 +169,7 @@ func Get(ctx context.Context, fsString string) (f fs.Fs, err error) {
 			})
 		}
 	}
+	fmt.Println("cache G")
 	return f, err
 }
 

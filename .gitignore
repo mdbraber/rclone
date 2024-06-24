@@ -20,3 +20,4 @@ __pycache__
 resource_windows_*.syso
 .devcontainer
 *.xcframework
+*.dylib

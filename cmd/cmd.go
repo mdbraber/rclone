@@ -96,23 +96,32 @@ func ShowVersion() {
 // It returns a string with the file name if points to a file
 // otherwise "".
 func NewFsFile(remote string) (fs.Fs, string) {
+	fmt.Println("NewFsFile A")
 	_, fsPath, err := fspath.SplitFs(remote)
+	fmt.Println("NewFsFile B")
 	if err != nil {
+	fmt.Println("NewFsFile C")
 		err = fs.CountError(err)
 		log.Fatalf("Failed to create file system for %q: %v", remote, err)
 	}
+	fmt.Println("NewFsFile C2")
 	f, err := cache.Get(context.Background(), remote)
+	fmt.Println("NewFsFile C3")
 	switch err {
 	case fs.ErrorIsFile:
+	fmt.Println("NewFsFile D")
 		cache.Pin(f) // pin indefinitely since it was on the CLI
 		return f, path.Base(fsPath)
 	case nil:
+	fmt.Println("NewFsFile E")
 		cache.Pin(f) // pin indefinitely since it was on the CLI
 		return f, ""
 	default:
+	fmt.Println("NewFsFile F")
 		err = fs.CountError(err)
 		log.Fatalf("Failed to create file system for %q: %v", remote, err)
 	}
+	fmt.Println("NewFsFile G")
 	return nil, ""
 }
 
@@ -121,8 +130,11 @@ func NewFsFile(remote string) (fs.Fs, string) {
 // This works the same as NewFsFile however it adds filters to the Fs
 // to limit it to a single file if the remote pointed to a file.
 func newFsFileAddFilter(remote string) (fs.Fs, string) {
+	fmt.Println("newFsFileAddFilter A")
 	fi := filter.GetConfig(context.Background())
+	fmt.Println("newFsFileAddFilter B")
 	f, fileName := NewFsFile(remote)
+	fmt.Println("newFsFileAddFilter C")
 	if fileName != "" {
 		if !fi.InActive() {
 			err := fmt.Errorf("can't limit to single files when using filters: %v", remote)
@@ -136,6 +148,7 @@ func newFsFileAddFilter(remote string) (fs.Fs, string) {
 			log.Fatalf("Failed to limit to single file %q: %v", remote, err)
 		}
 	}
+	fmt.Println("newFsFileAddFilter D")
 	return f, fileName
 }
 
@@ -144,6 +157,7 @@ func newFsFileAddFilter(remote string) (fs.Fs, string) {
 // The source can be a file or a directory - if a file then it will
 // limit the Fs to a single file.
 func NewFsSrc(args []string) fs.Fs {
+	fmt.Println("NewFsSrc")
 	fsrc, _ := newFsFileAddFilter(args[0])
 	return fsrc
 }
@@ -247,6 +261,7 @@ func ShowStats() bool {
 
 // Run the function with stats and retries if required
 func Run(Retry bool, showStats bool, cmd *cobra.Command, f func() error) {
+	fmt.Println("A")
 	ci := fs.GetConfig(context.Background())
 	var cmdErr error
 	stopStats := func() {}
@@ -258,8 +273,11 @@ func Run(Retry bool, showStats bool, cmd *cobra.Command, f func() error) {
 	} else if showStats {
 		stopStats = StartStats()
 	}
+	fmt.Println("B")
 	SigInfoHandler()
+	fmt.Println("C")
 	for try := 1; try <= ci.Retries; try++ {
+		fmt.Println("D")
 		cmdErr = f()
 		cmdErr = fs.CountError(cmdErr)
 		lastErr := accounting.GlobalStats().GetLastError()
@@ -299,10 +317,12 @@ func Run(Retry bool, showStats bool, cmd *cobra.Command, f func() error) {
 			time.Sleep(ci.RetriesInterval)
 		}
 	}
+	fmt.Println("E")
 	stopStats()
 	if showStats && (accounting.GlobalStats().Errored() || *statsInterval > 0) {
 		accounting.GlobalStats().Log()
 	}
+	fmt.Println("F")
 	fs.Debugf(nil, "%d go routines active\n", runtime.NumGoroutine())
 
 	if ci.Progress && ci.ProgressTerminalTitle {
@@ -328,13 +348,15 @@ func Run(Retry bool, showStats bool, cmd *cobra.Command, f func() error) {
 			fs.Errorf(nil, "Failed to list open files: %v", err)
 		}
 	}
-
+	
+	fmt.Println("G")
 	// clear cache and shutdown backends
 	cache.Clear()
 	if lastErr := accounting.GlobalStats().GetLastError(); cmdErr == nil {
 		cmdErr = lastErr
 	}
-
+	
+	fmt.Println("H")
 	// Log the final error message and exit
 	if cmdErr != nil {
 		nerrs := accounting.GlobalStats().GetErrors()
@@ -344,6 +366,7 @@ func Run(Retry bool, showStats bool, cmd *cobra.Command, f func() error) {
 			log.Printf("Failed to %s with %d errors: last error was: %v", cmd.Name(), nerrs, cmdErr)
 		}
 	}
+	fmt.Println("I")
 	resolveExitCode(cmdErr)
 }
 

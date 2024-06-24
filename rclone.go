@@ -9,6 +9,7 @@ import (
 	"github.com/rclone/rclone/cmd"
 	_ "github.com/rclone/rclone/cmd/all"    // import all commands
 	_ "github.com/rclone/rclone/lib/plugin" // import plugins
+	//"golang.org/x/crypto/scrypt"
 )
 
 // #cgo CFLAGS: -x objective-c -I/Users/mdbraber/src/ios_system
@@ -79,6 +80,16 @@ func GoMain(argc C.int, argv **C.char) int {
 		fmt.Println("WaitGroup")
         
 		cmd.Main()
+
+		/*
+		password := "SAgHJTxN33IFo_Z-A5b_o70A9cjsH8F0kt5Xa_RlVpBb5MNej2zHFVM0"
+		saltBytes := []byte{0xA8, 0x0D, 0xF4, 0x3A, 0x8F, 0xBD, 0x03, 0x08, 0xA7, 0xCA, 0xB8, 0x3E, 0x58, 0x1F, 0x86, 0xB1}
+		keySize := 80
+		key, err := scrypt.Key([]byte(password), saltBytes, 16384, 8, 1, keySize)
+		fmt.Println(err)
+		fmt.Println(key)
+		*/
+
 		if (!doneCustomExit) { wg.Done() }
 
 		return
@@ -87,7 +98,7 @@ func GoMain(argc C.int, argv **C.char) int {
         
 	fmt.Println("GoMain done")
 
-	//C.ios_exit(C.int(code))
+	C.ios_exit(C.int(code))
 	return 0
 }
 

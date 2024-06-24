@@ -36,10 +36,13 @@ Eg
 		"groups": "Filter,Listing",
 	},
 	Run: func(command *cobra.Command, args []string) {
-		fmt.Println("Running ls")
+		fmt.Println("Running ls A")
 		cmd.CheckArgs(1, 1, command, args)
+		fmt.Println("Running ls B")
 		fsrc := cmd.NewFsSrc(args)
+		fmt.Println("Running ls C")
 		cmd.Run(false, false, command, func() error {
+			fmt.Println("Running ls operations")
 			return operations.List(context.Background(), fsrc, os.Stdout)
 		})
 	},

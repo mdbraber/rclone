@@ -185,6 +185,7 @@ type Cipher struct {
 
 // newCipher initialises the cipher.  If salt is "" then it uses a built in salt val
 func newCipher(mode NameEncryptionMode, password, salt string, dirNameEncrypt bool, enc fileNameEncoding) (*Cipher, error) {
+	fmt.Println("newCipher A")
 	c := &Cipher{
 		mode:            mode,
 		fileNameEnc:     enc,
@@ -192,13 +193,16 @@ func newCipher(mode NameEncryptionMode, password, salt string, dirNameEncrypt bo
 		dirNameEncrypt:  dirNameEncrypt,
 		encryptedSuffix: ".bin",
 	}
+	fmt.Println("newCipher B")
 	c.buffers.New = func() interface{} {
 		return new([blockSize]byte)
 	}
+	fmt.Println("newCipher C")
 	err := c.Key(password, salt)
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("newCipher D")
 	return c, nil
 }
 
@@ -229,24 +233,36 @@ func (c *Cipher) setPassBadBlocks(passBadBlocks bool) {
 // Note that empty password makes all 0x00 keys which is used in the
 // tests.
 func (c *Cipher) Key(password, salt string) (err error) {
+	fmt.Println("Cipher A")
 	const keySize = len(c.dataKey) + len(c.nameKey) + len(c.nameTweak)
+	fmt.Println(keySize)
 	var saltBytes = defaultSalt
+	fmt.Println("Cipher B")
 	if salt != "" {
 		saltBytes = []byte(salt)
 	}
+	fmt.Println("Cipher C")
 	var key []byte
+	fmt.Println("Cipher C1")
 	if password == "" {
+		fmt.Println("Cipher C2")
 		key = make([]byte, keySize)
 	} else {
+		fmt.Println("Cipher C3")
 		key, err = scrypt.Key([]byte(password), saltBytes, 16384, 8, 1, keySize)
+		fmt.Println("Cipher C4")
 		if err != nil {
 			return err
 		}
 	}
+	fmt.Println("Cipher D")
 	copy(c.dataKey[:], key)
+	fmt.Println("Cipher E")
 	copy(c.nameKey[:], key[len(c.dataKey):])
+	fmt.Println("Cipher F")
 	copy(c.nameTweak[:], key[len(c.dataKey)+len(c.nameKey):])
 	// Key the name cipher
+	fmt.Println("Cipher G")
 	c.block, err = aes.NewCipher(c.nameKey[:])
 	return err
 }

@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"fmt"
 
 	"github.com/rclone/rclone/fs/config/configmap"
 	"github.com/rclone/rclone/fs/fspath"
@@ -39,6 +40,7 @@ func NewFs(ctx context.Context, path string) (Fs, error) {
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("NewFs A")
 	overridden := fsInfo.Options.Overridden(config)
 	if len(overridden) > 0 {
 		extraConfig := overridden.String()
@@ -64,7 +66,9 @@ func NewFs(ctx context.Context, path string) (Fs, error) {
 		overriddenConfig[suffix] = extraConfig
 		overriddenConfigMu.Unlock()
 	}
+	fmt.Println("NewFs B")
 	f, err := fsInfo.NewFs(ctx, configName, fsPath, config)
+	fmt.Println("NewFs C")
 	if f != nil && (err == nil || err == ErrorIsFile) {
 		addReverse(f, fsInfo)
 	}
